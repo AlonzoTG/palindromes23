@@ -1,0 +1,693 @@
+How I found big dual palindromes [by Keith F. Lynch, 11 Jan 2014]
+
+
+By popular request:
+
+The most obvious way to find dual binary-ternary palindromes is to try each N, 
+see if it's a binary palindrome, and if so see if it's also a ternary 
+palindrome. But this is very inefficient, since the vast majority of numbers 
+are neither.
+
+A much better approach is to turn successive integers into the left half of a 
+binary palindrome, then test them to see if they're also ternary palindromes.
+
+All binary palindromes must be odd (since otherwise the first digit, like the 
+last, would be 0), and likewise all ternary palindromes must not be divisible 
+by 3. So all dual palindromes must not be divisible by either 2 or 3.
+
+For a binary palindrome to not be divisible by 3, it must be of odd length. For 
+a ternary palindrome to not be divisible by 2, it must be of odd length and 
+have 1 as a middle digit. (Proofs on request.)
+
+So ternary palindromes are scarcer, so it's even more efficient to turn 
+successive integers into the left half of a ternary palindrome and test each of 
+them to see if they're also a binary palindrome. (I'm using "half" loosely, 
+since the middle digit is constant.)
+
+It's more efficient yet to skip ranges of integers which, when represented as 
+odd-length ternary palindromes with 1 as a middle digit, would be represented 
+by even-length binary numbers, since those numbers would either not be binary 
+palindromes or would be divisible by 3, hence can't be dual binary-ternary 
+palindromes.
+
+That's how my first program worked. It found the first five solutions in less 
+than a second, the sixth after a few hours, and the seventh and last then known 
+solution after about two weeks.
+
+Each block of numbers to be tested started where both binary and ternary 
+representations of the number started being of odd length and stopped where 
+this ceased to be the case. There's no pattern to these overlaps, since powers 
+of 2 and powers of 3 are not commensurate, i.e. no positive integer power of 2 
+is equal to an integer power of 3. Old-timers may be amused that to clarify how 
+these overlaps fit together, I used a slide rule.
+
+Of course I precomputed the start and stop points.
+
+It then occurred to me that these blocks can be divided into parts where the 
+binary numbers begin with 10 and parts where they begin with 11. The former 
+numbers must of course end with 01 and the latter with 11, since they're to be 
+palindromes. So instead of generating every ternary palindrome of the 
+appropriate length with 1 as a middle digit, I could skip the half of them 
+whose digits adjacent to the middle digit would give the wrong remainder when 
+the palindrome was divided by 4. For binary numbers beginning with 10, hence 
+ending with 01, that remainder must be 1, and for binary numbers beginning with 
+11, hence ending with 11, that remainder must be 3. This would almost double 
+the speed of the program.
+
+But why stop there? Have four blocks for each odd binary length, for binary 
+numbers beginning with 100, 101, 110, and 111, then only generate ternary 
+palindromes whose 8-remainder is correct in the first place. This would almost 
+double the speed of the program yet again. (Of course for the average binary 
+length, about half of those blocks wouldn't even be used, since the ternary 
+representations would be of even length about half the time.)
+
+But why stop there either? I could keep doing this until I run out of memory, 
+making the program faster and faster.
+
+I had thought of all this by December 14th when I challenged Alan Grimes, a 
+younger programmer who considered both my programming skills and my computer 
+hardware to be obsolete, to a race to find the 8th dual binary-ternary 
+palindrome, he with his faster and more modern computers, and I with my 
+"obsolete" programming skills.
+
+Much to my surprise and annoyance, he won, discovering an 8th solution just two 
+days later, which was before I even started writing my program. His solution, 
+2004595370006815987563563, has 25 decimal digits, 51 ternary digits (trits), 
+and 81 binary digits (bits). His program was based on my description of my 
+first program, which I had posted on alt.math.recreational, but was even simpler 
+than my first program, as it didn't skip over ranges with even-length binary 
+palindromes.
+
+I'll use rediscovering Alan's number as an example of how my program works.
+
+I split the numbers that have some fixed odd number of bits, in this case 81, 
+into 2^15 (32768) equal blocks, each of which begins with 1 followed by a 
+unique 15 bits. In this case only the first 25609 of those blocks are used, 
+since the last 7159 would map into ternary numbers with 52 trits, which can't be 
+odd numbers if they're palindromes.
+
+The block which contains Alan's number begins
+1101010000111110xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+x
+and ends with
+1101010000111111xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+x
+with yet-to-be-determined digits replaced with "x".
+
+Converting those binary numbers to ternary (with the "x"s all turned to "0"s in 
+the first (start) case and "1"s in the second (stop) case) gets me
+221010112010200xxxxxxxxxx1xxxxxxxxxx002010211010122
+through
+221010112100211xxxxxxxxxx1xxxxxxxxxx112001211010122
+with yet-to-be-determined digits once again replaced with "x"s. (In the "stop" 
+case, I round the ternary number up, not down, hence it begins 221010112100211, 
+not 221010112100210.)
+
+So instead of testing 1.4 million ternary palindromes to search for binary 
+palindromes in this range, I only have to test 247:
+
+221010112010200xxxxxxxxxx1xxxxxxxxxx002010211010122
+through
+221010112110210xxxxxxxxxx1xxxxxxxxxx012011211010122
+
+(Alan's solution is
+221010112100202xxxxxxxxxx1xxxxxxxxxx202001211010122
+but we don't know that yet.)
+
+But wait, what goes in place of the "x"s? If I have to try all possible 
+ten-digit ternary numbers, I haven't gained anything. Fortunately, I don't have 
+to do anything of the kind. I know what the 65536-remainder of the number must 
+be. All numbers in this block begin with with 1101010000111110 in binary so 
+they must all end with 0111110000101011, which is 31787. So I just have to 
+arrange for the ternary palindrome to have the same remainder when divided by 
+65536.
+
+How do I do that? First I calculate and store the remainders of the successive 
+powers of 3 when they're divided by 65536. They start 1, 3, 9, 27, 81, 243, 
+729, 2187, 6561, 19683, 59049, 46075, 7153, 21459. This series repeats after 
+16384 terms, but I only calculate and store the first 123 of them. I do this 
+only once for the whole program. It takes a small fraction of a second.
+
+Next I calculate the 65536-remainder of the following 16 ternary numbers 
+(leading 0s retained for clarity):
+
+100000000000000000000000000000000000000000000000001
+010000000000000000000000000000000000000000000000010
+001000000000000000000000000000000000000000000000100
+000100000000000000000000000000000000000000000001000
+000010000000000000000000000000000000000000000010000
+000001000000000000000000000000000000000000000100000
+000000100000000000000000000000000000000000001000000
+000000010000000000000000000000000000000000010000000
+000000001000000000000000000000000000000000100000000
+000000000100000000000000000000000000000001000000000
+So instead of testing 1.4 million ternary palindromes to search for binary 
+palindromes in this range, I only have to test 247:
+
+221010112010200xxxxxxxxxx1xxxxxxxxxx002010211010122
+through
+221010112110210xxxxxxxxxx1xxxxxxxxxx012011211010122
+
+(Alan's solution is
+221010112100202xxxxxxxxxx1xxxxxxxxxx202001211010122
+but we don't know that yet.)
+
+But wait, what goes in place of the "x"s? If I have to try all possible 
+ten-digit ternary numbers, I haven't gained anything. Fortunately, I don't have 
+to do anything of the kind. I know what the 65536-remainder of the number must 
+be. All numbers in this block begin with with 1101010000111110 in binary so 
+they must all end with 0111110000101011, which is 31787. So I just have to 
+arrange for the ternary palindrome to have the same remainder when divided by 
+65536.
+
+##############################################################
+
+How do I do that? First I calculate and store the remainders of the successive 
+powers of 3 when they're divided by 65536. They start 1, 3, 9, 27, 81, 243, 
+729, 2187, 6561, 19683, 59049, 46075, 7153, 21459. This series repeats after 
+16384 terms, but I only calculate and store the first 123 of them. I do this 
+only once for the whole program. It takes a small fraction of a second.
+
+Next I calculate the 65536-remainder of the following 16 ternary numbers 
+(leading 0s retained for clarity):
+So instead of testing 1.4 million ternary palindromes to search for binary 
+palindromes in this range, I only have to test 247:
+
+221010112010200xxxxxxxxxx1xxxxxxxxxx002010211010122
+through
+221010112110210xxxxxxxxxx1xxxxxxxxxx012011211010122
+
+(Alan's solution is
+221010112100202xxxxxxxxxx1xxxxxxxxxx202001211010122
+but we don't know that yet.)
+
+But wait, what goes in place of the "x"s? If I have to try all possible 
+ten-digit ternary numbers, I haven't gained anything. Fortunately, I don't have 
+to do anything of the kind. I know what the 65536-remainder of the number must 
+be. All numbers in this block begin with with 1101010000111110 in binary so 
+they must all end with 0111110000101011, which is 31787. So I just have to 
+arrange for the ternary palindrome to have the same remainder when divided by 
+65536.
+
+How do I do that? First I calculate and store the remainders of the successive 
+powers of 3 when they're divided by 65536. They start 1, 3, 9, 27, 81, 243, 
+729, 2187, 6561, 19683, 59049, 46075, 7153, 21459. This series repeats after 
+16384 terms, but I only calculate and store the first 123 of them. I do this 
+only once for the whole program. It takes a small fraction of a second.
+
+Next I calculate the 65536-remainder of the following 16 ternary numbers 
+(leading 0s retained for clarity):
+
+100000000000000000000000000000000000000000000000001
+010000000000000000000000000000000000000000000000010
+001000000000000000000000000000000000000000000000100
+000100000000000000000000000000000000000000000001000
+000010000000000000000000000000000000000000000010000
+000001000000000000000000000000000000000000000100000
+000000100000000000000000000000000000000000001000000
+000000010000000000000000000000000000000000010000000
+000000001000000000000000000000000000000000100000000
+000000000100000000000000000000000000000001000000000
+000000000010000000000000000000000000000010000000000
+000000000001000000000000000000000000000100000000000
+000000000000100000000000000000000000001000000000000
+000000000000010000000000000000000000010000000000000
+000000000000001000000000000000000000100000000000000
+000000000000000100000000000000000001000000000000000
+000000000000000010000000000000000010000000000000000
+000000000000000001000000000000000100000000000000000
+000000000000000000100000000000001000000000000000000
+000000000000000000010000000000010000000000000000000
+000000000000000000001000000000100000000000000000000
+000000000000000000000100000001000000000000000000000
+000000000000000000000010000010000000000000000000000
+000000000000000000000001000100000000000000000000000
+000000000000000000000000101000000000000000000000000
+
+These numbers, the sum of the 0th and 50th term of the previous series, 
+followed by the sum of the 1st and the 49th, the 2nd and 48th, ... the 24th and 
+26th, all modulo 65536, are 58314, 41286, 13770, 4614, 1610, 22598, 30026, 
+33798, 17098, 1350, 52938, 44038, 6474, 43078, 49738, 35334, 2506, 16710, 53194, 
+7686, 37962, 53318, 30538, 26630, and 14538. I then store twice those numbers 
+(mod 65536) to represent the remainders of:
+
+200000000000000000000000000000000000000000000000002
+020000000000000000000000000000000000000000000000020
+002000000000000000000000000000000000000000000000200
+000200000000000000000000000000000000000000000002000
+000020000000000000000000000000000000000000000020000
+000002000000000000000000000000000000000000000200000
+000000200000000000000000000000000000000000002000000
+000000020000000000000000000000000000000000020000000
+000000002000000000000000000000000000000000200000000
+000000000200000000000000000000000000000002000000000
+000000000020000000000000000000000000000020000000000
+000000000002000000000000000000000000000200000000000
+000000000000200000000000000000000000002000000000000
+000000000000020000000000000000000000020000000000000
+000000000000002000000000000000000000200000000000000
+000000000000000200000000000000000002000000000000000
+000000000000000020000000000000000020000000000000000
+000000000000000002000000000000000200000000000000000
+000000000000000000200000000000002000000000000000000
+000000000000000000020000000000020000000000000000000
+000000000000000000002000000000200000000000000000000
+000000000000000000000200000002000000000000000000000
+000000000000000000000020000020000000000000000000000
+000000000000000000000002000200000000000000000000000
+000000000000000000000000202000000000000000000000000
+
+Those numbers are 51092, 17036, 27540, 9228, 3220, 45196, 60052, 2060, 34196, 
+2700, 40340, 22540, 12948, 20620, 33940, 5132, 5012, 33420, 40852, 15372, 
+10388, 41100, 61076, 53260, and 29076.
+
+Of course I already have the remainder for 3^25:
+
+000000000000000000000000010000000000000000000000000
+
+It's 10915.
+
+Note that I calculate and store these 33 numbers just once for all length-51 
+ternary palindromes. Again, this only takes a tiny fraction of a second. And it 
+takes negligible memory to store them.
+
+To find the remainder for a given ternary palindrome, I then just add them 
+together as appropriate. That's just 17 additions. Or rather 16, since I start 
+my sum, not with 0, but with 10915, the remainder for 3^25.
+
+For instance to find the 65536-remainder for Alan's
+
+221010112100202xxxxxxxxxx1xxxxxxxxxx202001211010122
+
+with the "x"s set to 0 I add the remainders for
+
+000000000000000000000000010000000000000000000000000 10915
+200000000000000000000000000000000000000000000000002 51092
+020000000000000000000000000000000000000000000000020 17036
+001000000000000000000000000000000000000000000000100 13770
+000000000000000000000000000000000000000000000000000 0
+000010000000000000000000000000000000000000000010000 1610
+000000000000000000000000000000000000000000000000000 0
+000000100000000000000000000000000000000000001000000 30026
+000000010000000000000000000000000000000000010000000 33798
+000000002000000000000000000000000000000000200000000 34196
+000000000100000000000000000000000000000001000000000 1350
+000000000000000000000000000000000000000000000000000 0
+000000000000000000000000000000000000000000000000000 0
+000000000000200000000000000000000000002000000000000 12948
+000000000000000000000000000000000000000000000000000 0
+000000000000002000000000000000000000200000000000000 33940
+
+The sum (mod 65536) is 44073. Recall that the target remainder for the ternary 
+palindrome is 31787. So we need the digits in the "x"s to -- if they stood 
+alone and all other digits were 0 -- have a remainder of 31787 minus 44073, 
+which equals (mod 65536) 53250.
+
+How do we know what to set the "x"s to to get it to come out right?
+
+Simple. We try all 3^10 (59049) possible combinations of ternary digits.
+
+But wouldn't that be just as slow as Alan's method? No, because I do this just 
+once for all 51-trit numbers, and save the results in a table. Here's the 
+relevant section of that table:
+
+53244: 0001102022 0122200010 1011221000 1110201200 2111212222
+53246: 2110212000
+53248:
+53250: 0002001202 0021200022
+53252: 0000122102 1002012002
+53254: 0021101211 2221222112
+53256: 1021112011
+
+There are two solutions for 53250. There can be anywhere from 0 to 6 solutions. 
+The average number of solutions is about 1.8 (3^10/2^15). By "solution" I mean 
+the remainder comes out right, not that it necessarily generates a dual 
+palindrome.
+
+We try both. The second one works, i.e. generates a binary number that's a 
+palindrome.
+
+221010112100202xxxxxxxxxx1xxxxxxxxxx202001211010122
+               0021200022 2200021200
+equals
+11010100001111101010101010010111101111011101111011110100101010101011111000010101
+1
+which is a palindrome.
+
+There is of course no guarantee that one of the solutions on the appropriate 
+row of the table will generate a binary palindrome. In the vast majority of 
+cases none of the solutions will work. On the other hand, it's unlikely but not 
+impossible that more than one of them will do so. (Well, very likely it *is* 
+impossible, but I'm not going to take the time to try to prove it.) But if 
+there is a binary palindrome, it has to correspond to one of the table entries 
+on the correct row. This method is guaranteed not to miss any.
+
+This table comprises the vast majority of the memory usage of my program. It 
+has 32768 rows (remainders here can only be even, so there aren't 65536 rows), 
+each with 6 columns, each with 10 ternary digits, for a total of just under 2 
+megabytes. If this was too much, I could redo it with pointers and save about 
+2/3 of that space.
+
+Yes, I store the ternary numbers in this table in ternary, so I don't have to 
+keep converting the same numbers. And with one digit per array element so I 
+don't have to keep unpacking the same numbers.
+
+If I coded this program in the obvious way, the CPU time would be dominated by 
+ternary to binary conversions. So I avoid doing them. Instead, I created a 
+table of powers of 3 in binary, just once for the whole program, then added 
+them together in pairs, just once for each length of ternary numbers. For 
+instance for 51-trit numbers I have 3^50 + 3^0, 3^49 + 3^1, ... 3^24 + 3^26. I 
+also store twice these numbers, to correspond to 2...2 in ternary. Then I just 
+add together, in binary, the appropriate subset of them for each ternary 
+palindrome. For Alan's number they're the binary numbers for:
+
+000000000000000000000000010000000000000000000000000
+200000000000000000000000000000000000000000000000002
+020000000000000000000000000000000000000000000000020
+001000000000000000000000000000000000000000000000100
+000010000000000000000000000000000000000000000010000
+000000100000000000000000000000000000000000001000000
+... etc.
+
+Binary addition is of course very fast, even though instead of using the 
+computer's native binary I'm using arrays with one digit per element of the 
+array. I do this for binary, ternary, and decimal. This way I never have to 
+worry about overrunning the computer's word length, nor do I waste time 
+repeatedly packing and unpacking digits.
+
+If the program has found a dual palindrome, only then does it take the time to 
+covert the number to base 10, to display on the screen or save to a file.
+
+One more way in which I sped things up: In the above I kept talking about 
+taking the 65536-remainder of various numbers. I actually never did this. 
+Instead I stored the relevant numbers in unsigned 16-bit integers (uint16_t), 
+which automatically did that for me, taking literally no time at all, and making 
+the program both faster and less cluttered.
+
+It's ironic that Alan sped things up by switching from 32-bit integers to 
+64-bit integers, and that I sped things up enormously more by (in part) 
+switching from 32-bit integers to 16-bit integers.
+
+Further speedups are possible by using larger tables, trading memory for time. 
+When my program found the ninth dual palindrome, 
+8022581057533823761829436662099, on January 7th, I was already in the process 
+of rewriting it to use 20-bit tables rather than 16-bit, in conjunction with 
+12-trit rather than 10-trit numbers. But I wisely kept the old program running, 
+and it found the above number before I finished rewriting. (And it's *still* 
+running. I'll terminate it after it rolls over to 105-bit numbers, which I 
+expect will happen on the 12th or 13th.)
+
+Also, for each of those 12-trit numbers, my planned upgraded program would have 
+stored the binary equivalent. For instance for my newly discovered palindrome, 
+which is
+ 21000020210011222122 220212010000 1 000010212022 22122211001202000012
+in ternary, the relevant 12-trit number would be 220212010000, so
+                      220212010000 1 000102120220 00000000000000000000
+would be converted to binary and stored along with the other table. (Spaces 
+added for clarity.) Similarly with all 531440 other 12-trit numbers, of course. 
+This would be done just once for each trit-length of the number being tested 
+(in this case 65). This would speed up the binary addition. I could speed it up 
+even more by creating similar tables for other chunks of trits. So to convert 
+my ternary palindrome,
+21000020 210011222122 220212010000 1 000010212022 221222110012 02000012
+to binary, I'd just look up in the tables the pre-computed binaries for
+21000020 000000000000 000000000000 0 000000000000 000000000000 02000012
+         210011222122 000000000000 0 000000000000 221222110012 00000000
+                      220212010000 1 000010212022 000000000000 00000000
+
+Then I'd just add these three binary numbers and check the result to see if 
+it's a binary palindrome. Again, the ternary-to-binary conversion and checking 
+the result to see if it's a palindrome is where the program spends most of its 
+time, so this is where speedups are most critical.
+
+Of course it should go without saying that when I check a binary number to see 
+if it's a palindrome, I quit as soon as I find the first non-matching pair of 
+bits, rather than wasting time checking all the other pairs of bits. The vast 
+majority of candidate binary numbers are *not* palindromes.
+
+All my programs were written in C (as were Alan's), but I could have written 
+them in any language. I made no use of recursion, dynamic memory allocation, or 
+pointers. I didn't even use floating point numbers or 64-bit integers. I did 
+use multidimensional arrays. (Why, yes, I did used to be a Fortran programmer. 
+How could you tell?)
+
+(Well, okay, my numerical integration program used floating point, but my 
+program for finding dual palindromes did not.)
+
+Most of these ideas could easily be generalized to find dual palindromes in 
+other pairs of bases. Or, even more easily, to find dual palindromes in binary 
+and *balanced* ternary. (I suspect that the statistics on those are the same as 
+on binary and standard ternary. But certainly balanced ternary palindromes look 
+prettier, if written, as usual, with the single characters +, 0, and - for 
+digits, since those characters are themselves symmetrical.)
+
+To summarize, what I do or recommend is:
+
+* Precompute as much as you have room to store, just once for for each trit 
+length. Where possible (e.g. powers of 3 in binary) just once for the whole 
+program.
+
+* Skip ranges where there can't be solutions.
+
+* Avoid packing and unpacking numbers, and having to worry about overrunning 
+word lengths. Instead, I always use one digit per array element.
+
+* Don't bother to ever convert anything to decimal except successful 
+palindromes.
+
+* Start the program with numbers as small as possible (2^35 if you're using 
+16-bit remainders) to make sure it finds all known dual palindromes and doesn't 
+"find" any bogus ones.
+
+* Check any new dual palindromes it finds, using a completely different 
+program, to make absolutely certain they aren't bogus.
+
+---
+
+[ I'm looking for an IT job in the DC area. So is Alan, and so are many other 
+experienced programmers I know. Employers simply aren't hiring. Not even the 
+ones who complain to Congress that they can't find anyone to hire. ]
+
+_______________________________________________
+math-fun mailing list
+http://mailman.xmission.com/cgi-bin/mailman/listinfo/math-fun
+
+########################################################################3
+
+More thoughts on finding dual palindromes, specifically about the
+"evil lookup table" that shows, for each remainder, what the inner
+several ternary digits would have to be.
+
+One reason I was reluctant to immediately show you my code (other than
+the fact that it was hastily written and ugly) was because you were
+prepared to be impressed by how quickly it found the first few
+palindromes.  But it was actually quite slow at finding them, since
+the table was always the same size, and that size was much larger than
+optimal for small palindromes, since most of what it precomputed for
+those was never used.  (Also, palindromes with fewer than twice the
+number of trits as the fixed-length table can't be found at all.)
+Conversely, it was much smaller than optimal for large palindromes.
+(One reason I chose the size I did was because I didn't think the 9th
+dual palindrome would be as large as it turned out to be.)
+
+I haven't worked out just what size table would be optimal for each
+size of palindrome, but of course the table should ideally get larger
+as the palindromes do.  I chose a fixed size mostly because I was in
+a hurry to find the 9th, since for all I knew it was only a little
+larger than the 8th, and you might have found it at any time.  In
+retrospect, the only way you could have found it in this decade was by
+re-inventing my "evil" tables, or by coming up with some other clever
+algorithm.
+
+Also, it's not obvious to me what the ideal ratio between the number
+of bits and the number of trits should be.  I used 16 bits and 10
+trits mostly because 2^16 is close to and more than 3^10.  At one time
+I had the false idea that this would result in there being at most one
+10-bit ternary string that would yield the correct remainder.  This
+was not only wrong, but was also muddled thinking, since, although the
+modulo is 2^16, it's really 15 bits, not 16, since the last bit is
+fixed, so the average number of solutions per remainder has to be
+close to 2, not close to 1.
+
+The average number of solutions per remainder for B bits and T trits
+has to be 3^T / 2^B, but it's not immediately obvious to me what's an
+ideal value for that ratio.
+
+Eventually, of course, you'd run out of memory if you kept using the
+optimal table size for each trit length number.  Even before that,
+you'd start madly swapping (successive memory accesses are in "random"
+locations), and that might slow things down more than sticking with a
+table that will fit in real memory.  You could stretch your memory by
+a factor of four my using packed ternary in the table, i.e. four
+ternary digits per byte, at some cost in the time it takes to unpack
+them.
+
+On second thought, since (if you've implemented the suggestions near
+the bottom of my long description) all you're doing with those ternary
+strings is using them as indices to another table, which has them
+pre-converted to binary for the ternary-to-binary conversion, you
+might as well skip the middleman, and never store the ternary at all!
+(Why yes, I am mostly making this up as I go along.)  That means the
+program doesn't actually "know" what the ternary palindrome is, but
+all it needs to know is that it exists, and it does know that.  If the
+binary turns out to be a palindrome, then you can generate the ternary
+palindrome for display on the screen by back-converting it from the
+binary palindrome, the same way you generate the decimal equivalent
+for display on the screen.
+
+(My piecewise pre-converting ternary palindromes to binary is almost
+as important a part of my speedup as is my "evil" table.  The GNU
+base-conversion routines may be optimal for standalone out-of-the-
+blue base conversions, but they're far from optimal if you know ahead
+of time that you'll be converting vast quantities of ternary numbers
+to binary.  This goes double if you know ahead of time that all those
+ternary numbers will be T-trit ternary palindromes.)
+
+In my long description, I didn't mention the fact that I don't
+actually have to re-create the table for each new palindrome trit
+length.  Each remainder increases by a factor of 3 (and then has to be
+reduced mod 2^16 (or 2^whatever)), so it's only necessary to permute
+the rows of the table.  I didn't do it that way since making a new
+table that size is fairly quick, and since permuting the rows in the
+obvious way -- copying the whole table into a new array -- would
+require double the memory.  If you have twice the memory you need for
+one table, a better use of it is making that one table larger.
+
+(I did make use of this fact in determining what's the most solutions
+you'd ever get in one row.  The answer for one palindrome trit length
+is the answer for all of them.  And for a table bit length of 16 and
+trit length of 10, that answer is 6.  No, I don't know any way to find
+that answer without simply generating and counting all of them.)
+
+For "evil" tables larger than 16 bits, re-creating the same-length
+table for longer trit lengths would start taking significant time, so
+it's worth thinking about practical ways to permute the existing table
+rather than starting from scratch with each new trit length.
+
+I was thinking in Fortran, not C.  In Fortran, a multi-dimensional
+array consists of a monolithic block of memory, which is then viewed
+as arranged in a rectangle or higher-dimensional rectangular solid.
+In C, a multi-dimensional array consists of pointers to lower-
+dimensional arrays.  So to permute the rows of that table, I only need
+to move pointers around.  For the table size I used, I could have done
+that with an array of 2^15 *pointers*.  That doesn't take much space.
+
+Also, there may be some simple way to permute the rows that involves
+swapping two rows (or rather two pointers to rows) at a time, hence
+using very little more memory than is needed for the table itself.
+
+The row permutation for 2^2 would be:
+
+0 1 2 3
+0 3 2 1
+
+This can be done with one swap, 1<>3.
+
+The row permutation for 2^3 would be:
+
+0 1 2 3 4 5 6 7
+0 3 6 1 4 7 2 5
+
+This can be done with three row swaps, 1<>3, 2<>6, 5<>7.  That's
+simple enough.
+
+How about 2^4?
+
+0 1 2 3 4 5 6 7 8 9 A B C D E F
+0 3 6 9 C F 2 5 8 B E 1 4 7 A D
+
+There it starts getting hairy.  That's as far as I've thought about
+it.  So many ideas, so little time.  Too bad I'm only out one
+full-time job.  If only I was out two full-time jobs, I'd have yet
+another eight hours each day. :-)
+
+But what about reusing the previous "evil" table for a new trit
+length, when the table *isn't* of fixed length?
+
+If I'm adding one to the table bit length, keeping the table trit-
+length the same and keeping the palindrome bit- and trit-lengths the
+same, each row R splits in two, with some of the ternary strings
+staying in row R and some of them moving to the new row R + 2^A.  I
+haven't thought about whether knowing that is helpful.  (Of course
+you'd actually only do this when the palindrome trit-length *is*
+increasing, but it's simpler to think about that separately.)
+
+If I'm adding one to the table *trit* length, keeping everything
+else the same ... well, consider the row that rediscovered your
+number:
+53250: 0002001202 0021200022
+Prepend a 0 to those trit strings, and the remainder remains unchanged:
+53250: 00002001202 00021200022
+Prepend a 1
+?????: 10002001202 10021200022
+and the remainder increments by 10000000000 0 0000000001 0...0
+(that's a ternary number) (spaces added for clarity) mod 2^whatever.
+Or by twice that if you instead prepended a 2.  Yes, that's the
+same for all the ternary strings on the original row.  So I think
+it is worth building each new table from the old table rather than
+starting from scratch.
+
+(Note that I sometime use the term "ternary string" rather than
+"ternary number."  That's because that string is intended to be only
+part of a number.  For instance 0021200022 in this context really means
+0021200022 0 2200021200 000000000000000 (spaces added for clarity).)
+
+While I'm thinking about it, I might as well include that middle digit
+of 1 in my "evil" table, so I can skip a step elsewhere.  That would
+make all the remainders odd rather than even, and different, but so
+what?  I don't see any downside, offhand.
+
+Speaking of the "evil" table, the one that I included a small segment
+of in my long description, if you want to see the whole thing, I put
+it at http://KeithLynch.net/eviltable.txt
+
+If you're anything like me, staring at that for a while might be
+helpful.  Do use a fixed-with font.
+
+---
+
+As for the slide rule, that was just for satisfying myself that for
+any given odd bit length number, regardless of alignment:
+
+* It may be entirely within an odd trit length
+* An odd trit length may begin but not end within it
+* An odd trit length may end but not begin within it
+* It may not overlap any odd trit length at all
+
+Those are the only four possibilities.  An odd bit length can never go
+with two different odd trit lengths.  Neither can an odd trit length
+both begin and end within the same odd bit length.  That's why I chose
+to have the outermost loop of my program go by bit length rather than
+trit length, even though I'm generating ternary palindromes.  It's
+simpler that way.
+
+(With the slide rule, envision the odd trit lengths extending from
+1 to 3 and from 9 to 27 one one scale, and the odd bit lengths
+extending from 1 to 2, from 4 to 8, and from 8 to 16 on the other
+(identical) scale.  Slide them around to see how they interact.
+Or just take my word for it.)
+
+---
+
+As for the machine I was running this on, I finally got around to
+asking its sysop about it.  (Is the word "sysop" still in use?)
+Here's his reply:
+
+  CPU: Intel(R) Xeon(R) CPU           X3360  @ 2.83GHz (2833.59-MHz
+  686-class CPU)
+     Origin = "GenuineIntel"  Id = 0x1067a  Family = 0x6  Model = 0x17
+  Stepping = 10
+
+  Features=0xbfebfbff<FPU,VME,DE,PSE,TSC,MSR,PAE,MCE,CX8,APIC,SEP,MTRR,PGE,MCA,CMOV,PAT,PSE36,CLFLUS
+  H,DTS,ACPI,MMX,FXSR,SSE,SSE2,SS,HTT,TM,PBE>
+
+  Features2=0x408e3fd<SSE3,DTES64,MON,DS_CPL,VMX,SMX,EST,TM2,SSSE3,CX16,xTPR,PDCM,SSE4.1,XSAVE>
+     AMD Features=0x20100000<NX,LM>
+     AMD Features2=0x1<LAHF>
+     TSC: P-state invariant, performance statistics
+  real memory  = 2147483648 (2048 MB)
+  avail memory = 2081378304 (1984 MB)
+
+  Not really high-end or anything, but there's no reason for it to be, for
+  most purposes.  I think it's a dual-core plus hyperthreading, so it shows
+  up as four cores.
