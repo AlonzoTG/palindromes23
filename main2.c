@@ -350,8 +350,8 @@ int main ( int argc, char **argv ) {
         mpz_t share_limit_val_1;
         
         
-        if(i == 48) mpz_init_set_str(share_limit_val_1,  "1ca000000000000000000000000000000000000", 16);
-        else {
+//        if(i == 48) mpz_init_set_str(share_limit_val_1,  "1ca000000000000000000000000000000000000", 16);
+//        else {
             mpz_init ( share_limit_val_1 );
 
         {
@@ -371,7 +371,7 @@ int main ( int argc, char **argv ) {
 
             convert ( share_limit_val, share_limit_val_1, i );
         }
-        }
+  //      }
 
 int squelch = 0;
 
